@@ -4,6 +4,7 @@ import math
 ERROR_NUM_CLUSTERS = "Incorrect number of clusters!"
 ERROR_MAX_ITER = "Incorrect maximum iteration!"
 MAX_ITER_DEFAULT = 400  # Default maximum iterations
+EPS = 0.0001
 
 def main():
     # Parse Command Line Arguments
@@ -58,10 +59,31 @@ def main():
 
     #print("CHECK CLUSTERS:", data_points) 
 
-    #The first iteration
+    dim = len(data_points[0])
+    
 
-    arr_clusters = first_initialisation_of_clusters(data_points, k)
+    arr_centriods = initialize_centroids(data_points,k)
+    for i in range(max_iter):
+        arr_clusters = update_all_clusters(arr_centriods,data_points,k)
+        arr_centriods_copy = arr_centriods.copy()
+        arr_centriods = update_centers(arr_clusters, data_points, dim)
+        counter = 0
+        for index in range(k):
+            distance = compute_distance(arr_centriods[index], arr_centriods_copy[index])
+            if distance<EPS:
+                counter+=1
 
+        if counter == k:
+            break
+        
+
+
+    
+    for centroid in arr_centriods:
+        formatted_coords = ['%.4f' % coord for coord in centroid]
+        print(','.join(formatted_coords))
+        
+                    
 
 
 
@@ -76,38 +98,58 @@ def main():
     # for centroid in final_centroids:
     #     print(','.join(f'{coord:.4f}' for coord in centroid))
 
+   
 
 
-def first_initialisation_of_clusters(data_points, k):
-    arr_clusters = []
-    centroids = initialize_centroids(data_points, k)
+def update_centers(arr_clusters, data_points, dim):
+    arr_centroids = []
+    counter = 0
 
-    for i in range(k):
-        new_arr = []
-        new_arr.append(centroids[i])
-        arr_clusters.append(new_arr)
-    
-    for vectorX in data_points[k:]:
-        min_dis = compute_distance(vectorX, centroids[0])
-        closest_centroid = centroids[0]
-        centoid_num = -1
-        closest_centroid_num = 0
-        for centroidX in centroids:
-            distance = compute_distance(vectorX, centroidX)
-            centroid_num+=1
-            if distance<min_dis:
-                closest_centroid = centroidX
-                min_dis = distance
-                closest_centroid_num = centroid_num
+    for clusterX in arr_clusters:
+       
+
+        k = len(clusterX)
+        sum_point = [0.0 for i in range(dim)]
+        for point in clusterX:
+            for i in range(dim):
+                sum_point[i]+=point[i]
+        centroidX = [0.0 for i in range(dim)]        
+
+
+        for i in range(len(sum_point)):
+            if k>0:
+                centroidX[i] = sum_point[i]/k
+            else:
+                centroidX = data_points[counter]    
+                counter+=1
+                break 
                 
-        arr_clusters[closest_centroid_num].append(vectorX)  
+                
+        arr_centroids.append(centroidX)
+    return arr_centroids
 
-    return arr_clusters      
+
+def update_all_clusters(arr_centriods,data_points,k):
+    
+    arr_clusters = []
+    for i in range(k):
+        arr_clusters.append([])
+
+    for vectorX in data_points:
+        min_distance = compute_distance(arr_centriods[0], vectorX)
+        number_of_min_centr = 0
+        number_of_curr_centr = -1
+        for centroidX in arr_centriods:
+            number_of_curr_centr+=1
+            distance = compute_distance(vectorX, centroidX)
+            if distance < min_distance:
+                min_distance = distance
+                number_of_min_centr = number_of_curr_centr
+        arr_clusters[number_of_min_centr].append(vectorX)
+        
+    return arr_clusters
 
 
-def update_centers()
-
-def reavaluate_centroids(arr_cluster):
 
 
 
