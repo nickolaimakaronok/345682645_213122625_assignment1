@@ -3,6 +3,7 @@ import math
 
 ERROR_NUM_CLUSTERS = "Incorrect number of clusters!"
 ERROR_MAX_ITER = "Incorrect maximum iteration!"
+ERROR_OCCURED = "An Error Has Occurred"
 MAX_ITER_DEFAULT = 400  # Default maximum iterations
 EPS = 0.001
 
@@ -21,11 +22,11 @@ def main():
     
     try:
         if len(sys.argv) > 3:
-            print("An Error Has Occurred")
+            print(ERROR_OCCURED)
             sys.exit(1)
 
         if len(sys.argv) < 2:
-            print("An Error Has Occurred")
+            print(ERROR_OCCURED)
             sys.exit(1)    
 
         # Parse K
@@ -58,7 +59,7 @@ def main():
             sys.exit(1)
 
     except Exception:
-        print("An Error Has Occurred")
+        print(ERROR_OCCURED)
         sys.exit(1)
 
     # Read Input Data
@@ -189,7 +190,7 @@ def read_input():
             vector = [float(x) for x in line.split(',')]
             data_points.append(vector)
     except Exception:
-        print("An Error Has Occurred")
+        print(ERROR_OCCURED)
         sys.exit(1)
     return data_points
 
@@ -204,17 +205,17 @@ def validate_input(data_points):
     On failure prints "An Error Has Occurred" and exits.
     """
     if len(data_points) == 0:
-        print("An Error Has Occurred")
+        print(ERROR_OCCURED)
         sys.exit(1)
 
     dim = len(data_points[0])
     if dim == 0:
-        print("An Error Has Occurred")
+        print(ERROR_OCCURED)
         sys.exit(1)
 
     for vec in data_points:
         if len(vec) != dim:
-            print("An Error Has Occurred")
+            print(ERROR_OCCURED)
             sys.exit(1)
 
     return dim
@@ -222,3 +223,4 @@ def validate_input(data_points):
 
 if __name__ == "__main__":
     main()
+    exit(0)
