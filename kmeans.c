@@ -45,25 +45,23 @@ int main(int argc, char **argv)
 
     struct vector *head_vec, *curr_vec;
     struct cord *head_cord, *curr_cord;
-    int i, j, p, z, y, iter, i_for_epsilon, y_for_epsilon;
+    int i, j, p, z, y, iter, i_for_epsilon;
     int N = 0;
     int dim = 0;
     double n;
     char c;
 
-    struct vector *centorids;
+    struct vector *centroids;
     int *count_in_cluster;
     struct vector *sum_vectors;
-    int closest_centorid_index;
+    int closest_centroid_index;
     struct vector *curr_vector_X;
     struct vector *curr_sum_cluster;
     struct cord *curr_cord_in_sum;
     struct vector *last_centroids;
 
-    struct vector *curr_centorid; 
+    struct vector *curr_centroid; 
     struct vector *curr_last_centroids; 
-    struct cord *curr_cord_centroid;
-    struct cord *curr_cord_last_centroid;
     struct cord *first_vec_cord;
     int flag;
     struct vector *temp_vec;
@@ -174,7 +172,7 @@ int main(int argc, char **argv)
 
     dim = find_dim(head_vec);
 
-    centorids = initialize_centroids(head_vec, K, dim);
+    centroids = initialize_centroids(head_vec, K, dim);
     sum_vectors = initialize_sum_vectors(K,dim);
 
     count_in_cluster = calloc(K, sizeof(int));
@@ -189,12 +187,12 @@ int main(int argc, char **argv)
         for(j=0; j<K; j++) count_in_cluster[j] = 0;
 
         for(i = 0; i<N; i++) {
-                closest_centorid_index = find_closest_centroid(centorids, curr_vector_X, K, dim);
-                for(p = 0; p<closest_centorid_index; p++) {
+                closest_centroid_index = find_closest_centroid(centroids, curr_vector_X, K, dim);
+                for(p = 0; p<closest_centroid_index; p++) {
                     curr_sum_cluster = curr_sum_cluster->next;
                 }
                 curr_sum_cluster = add_coordinates_from_other_vector(curr_sum_cluster, curr_vector_X, dim);
-                count_in_cluster[closest_centorid_index]++;
+                count_in_cluster[closest_centroid_index]++;
                 /*if(curr_vector_X->next == NULL) {
                     break;
                 } */
@@ -228,32 +226,26 @@ int main(int argc, char **argv)
         /* Move to the next cluster in the sum_vectors list */
         curr_sum_cluster = curr_sum_cluster->next;
     }
-    last_centroids = centorids;
-    centorids = initialize_centroids(sum_vectors, K, dim);
+    last_centroids = centroids;
+    centroids = initialize_centroids(sum_vectors, K, dim);
     
 
-    curr_centorid = centorids;
+    curr_centroid = centroids;
     curr_last_centroids = last_centroids;
     flag = 1;
-    for(i_for_epsilon = 0; i_for_epsilon<K; i_for_epsilon++) {
-        curr_cord_centroid = curr_centorid->cords;
-        curr_cord_last_centroid = curr_last_centroids->cords;
-        /*we need to check previous_centorid[i] - new_centroid[i] < epsilon */
-        for(y_for_epsilon = 0; y_for_epsilon<dim; y_for_epsilon++) {
-            if(fabs(curr_cord_centroid->value-curr_cord_last_centroid->value)>=EPS) {
-                flag = 0;
-                break;
-            }
-            curr_cord_centroid = curr_cord_centroid->next;
-            curr_cord_last_centroid = curr_cord_last_centroid->next;
-            
-        }
 
-        if(!flag) {
+    for(i_for_epsilon = 0; i_for_epsilon < K; i_for_epsilon++) {
+        
+        double dist = compute_distance(curr_centroid, curr_last_centroids, dim);
+
+        if (dist >= EPS) {
+            flag = 0; 
             break;
         }
-    }
 
+        curr_centroid = curr_centroid->next;
+        curr_last_centroids = curr_last_centroids->next;
+    }
     if(flag) {
         free_vector_list(last_centroids);
         break;
@@ -265,11 +257,11 @@ int main(int argc, char **argv)
 
 
     }
-    
-    print_the_result(centorids, K, dim);
+
+    print_the_result(centroids, K, dim);
 
     free(count_in_cluster);
-    free_vector_list(centorids);
+    free_vector_list(centroids);
     free_vector_list(head_vec);
     free_vector_list(sum_vectors);
  
@@ -528,17 +520,17 @@ int isInteger(char *str) {
 int find_closest_centroid(const struct vector *centroids, const struct vector *vectorX, int K, int dim) {
     int min_index = 0;
     int i;
-    const struct vector *curr_centorid = centroids;
+    const struct vector *curr_centroid = centroids;
     double distance, min_distance;
-    min_distance = compute_distance(curr_centorid, vectorX, dim);
-    curr_centorid = curr_centorid->next;
+    min_distance = compute_distance(curr_centroid, vectorX, dim);
+    curr_centroid = curr_centroid->next;
     for(i = 1; i<K; i++) {
-        distance = compute_distance(curr_centorid, vectorX, dim);
+        distance = compute_distance(curr_centroid, vectorX, dim);
         if(distance<min_distance) {
             min_distance = distance;
             min_index = i;
         }
-        curr_centorid = curr_centorid->next;
+        curr_centroid = curr_centroid->next;
     }
     return min_index;
 }
