@@ -14,10 +14,16 @@ struct cord;
 
 
 int isInteger(char *str);
-double compute_distance(struct vector *v1, struct vector *v2, int dim);
+double compute_distance(const struct vector *v1, const struct vector *v2, int dim);
 int find_dim(const struct vector *vec);
 struct vector *initialize_centroids(const struct vector *head_vec, int K, int dim);
-int *find_closest_centroid(const struct vector *centroids, const struct vector *vectorX, int K, int dim);
+int find_closest_centroid(const struct vector *centroids, const struct vector *vectorX, int K, int dim);
+void print_the_result(struct vector *centroids_for_print, int K, int dim );
+void reset_vectors_to_zero(struct vector *head_vec);
+struct vector *add_coordinates_from_other_vector(struct vector *v1, struct vector *v2, int dim);
+struct vector *initialize_sum_vectors(int K, int dim);
+void free_vector_list(struct vector *head_vec);
+
 
 
 
@@ -36,6 +42,33 @@ struct vector
 int main(int argc, char **argv)
 {  
     int K, max_iter;
+
+    struct vector *head_vec, *curr_vec;
+    struct cord *head_cord, *curr_cord;
+    int i, j, p, z, y, iter, i_for_epsilon, y_for_epsilon;
+    int N = 0;
+    int dim = 0;
+    double n;
+    char c;
+
+    struct vector *centorids;
+    int *count_in_cluster;
+    struct vector *sum_vectors;
+    int closest_centorid_index;
+    struct vector *curr_vector_X;
+    struct vector *curr_sum_cluster;
+    struct cord *curr_cord_in_sum;
+    struct vector *last_centroids;
+
+    struct vector *curr_centorid; 
+    struct vector *curr_last_centroids; 
+    struct cord *curr_cord_centroid;
+    struct cord *curr_cord_last_centroid;
+    struct cord *first_vec_cord;
+    int flag;
+    struct vector *temp_vec;
+    struct vector *to_delete;
+    
 
     /* The error when the user entered more or less arguments tham needed */
     if (argc < 2 || argc > 3) { 
@@ -65,27 +98,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-
-
-    struct vector *head_vec, *curr_vec, *next_vec;
-    struct cord *head_cord, *curr_cord, *next_cord;
-    int i, j, p, z, y, iter, i_for_epsilon, y_for_epsilon;
-    int N = 0;
-    int dim = 0;
-    double n;
-    char c;
-    struct vector *centorids;
-    int *count_in_cluster;
-    struct vector *sum_vectors;
-    int closest_centorid_index;
-    struct vector *curr_vector_X;
-    struct vector *curr_sum_cluster;
-    struct cord *curr_cord_in_sum;
-    struct vector *last_centroids;
     
-    
-    
-
     head_cord = malloc(sizeof(struct cord));
 
     if (head_cord == NULL) {
@@ -124,11 +137,34 @@ int main(int argc, char **argv)
             continue;
         }
 
+       
+
         curr_cord->value = n;
         curr_cord->next = malloc(sizeof(struct cord));
         curr_cord = curr_cord->next;
         curr_cord->next = NULL;
         
+    }
+
+    temp_vec = head_vec;
+    
+        /* Iterate to the N-th vector (the last valid one) */
+    for(i = 0; i < N - 1; i++) {
+        temp_vec = temp_vec->next;
+    }
+
+        /* If there is an extra node after the N-th vector, delete it */
+    if (temp_vec->next != NULL) {
+        to_delete = temp_vec->next;
+        
+        /* Free the unused coordinate head allocated for the non-existent line */
+        free(head_cord); 
+        
+        /* Free the empty vector struct */
+        free(to_delete);
+        
+        /* Set next to NULL so the list ends properly */
+        temp_vec->next = NULL;
     }
 
     if(K >= N) {
@@ -139,7 +175,7 @@ int main(int argc, char **argv)
     dim = find_dim(head_vec);
 
     centorids = initialize_centroids(head_vec, K, dim);
-    sum_vectors =initialize_sum_vectors(K,dim);
+    sum_vectors = initialize_sum_vectors(K,dim);
 
     count_in_cluster = calloc(K, sizeof(int));
 
@@ -148,79 +184,114 @@ int main(int argc, char **argv)
 
     for(iter = 0; iter<max_iter; iter++) {
 
+        curr_sum_cluster = sum_vectors;
 
-        
-        for(j = 0; j<K; j++) {
-        
+        for(j=0; j<K; j++) count_in_cluster[j] = 0;
+
         for(i = 0; i<N; i++) {
                 closest_centorid_index = find_closest_centroid(centorids, curr_vector_X, K, dim);
-                count_in_cluster = calloc(K, sizeof(int));
                 for(p = 0; p<closest_centorid_index; p++) {
                     curr_sum_cluster = curr_sum_cluster->next;
                 }
-                curr_sum_cluster->cords = add_coordinates_from_other_vector(curr_sum_cluster, curr_vector_X, dim);
-                count_in_cluster[closest_centorid_index-1]++;
-                if(curr_vector_X->next == NULL) {
+                curr_sum_cluster = add_coordinates_from_other_vector(curr_sum_cluster, curr_vector_X, dim);
+                count_in_cluster[closest_centorid_index]++;
+                /*if(curr_vector_X->next == NULL) {
                     break;
-                }
+                } */
                 curr_vector_X = curr_vector_X->next;
+                curr_sum_cluster = sum_vectors;
+
 
         }
-        curr_sum_cluster = sum_vectors;
-        for(z=0; z<K; z++)
-        {
-            curr_cord_in_sum = curr_sum_cluster->cords;
-            if(count_in_cluster[z]!=0){
-                for(y=0; y<dim; y++)
-                {
-                    curr_cord_in_sum->value = curr_cord_in_sum->value / count_in_cluster[z];
-                    curr_cord_in_sum= curr_cord_in_sum->next;
-                }
+    curr_sum_cluster = sum_vectors;
+    for(z = 0; z < K; z++)
+    {
+        curr_cord_in_sum = curr_sum_cluster->cords;
+        
+        if(count_in_cluster[z] != 0) {
+            /* Normal case: Divide sum by number of points */
+            for(y = 0; y < dim; y++) {
+                curr_cord_in_sum->value = curr_cord_in_sum->value / count_in_cluster[z];
+                curr_cord_in_sum = curr_cord_in_sum->next;
             }
-            else{
-                curr_cord_in_sum = head_vec;
-            }
-            curr_sum_cluster = curr_sum_cluster->next;
         }
-        last_centroids = centorids;
-        centorids=initialize_centroids(curr_sum_cluster,K,dim);
+        else {
+            /* Empty Cluster case: Copy coordinates from the very first input vector */
+            first_vec_cord = head_vec->cords;
+            for(y = 0; y < dim; y++) {
+                curr_cord_in_sum->value = first_vec_cord->value;
+                curr_cord_in_sum = curr_cord_in_sum->next;
+                first_vec_cord = first_vec_cord->next;
+            }
+        }
+        
+        /* Move to the next cluster in the sum_vectors list */
+        curr_sum_cluster = curr_sum_cluster->next;
     }
+    last_centroids = centorids;
+    centorids = initialize_centroids(sum_vectors, K, dim);
+    
 
-    struct vector *curr_centorid = centorids;
-    struct vector *curr_last_centroids = last_centroids;
-    struct cord *curr_cord_centroid = centorids->cords;
-    struct cord *curr_cord_last_centroid = last_centroids->cords;
-    int flag = 1;
+    curr_centorid = centorids;
+    curr_last_centroids = last_centroids;
+    flag = 1;
     for(i_for_epsilon = 0; i_for_epsilon<K; i_for_epsilon++) {
-        //we need to check previous_centorid[i] - new_centroid[i] < epsilon
+        curr_cord_centroid = curr_centorid->cords;
+        curr_cord_last_centroid = curr_last_centroids->cords;
+        /*we need to check previous_centorid[i] - new_centroid[i] < epsilon */
         for(y_for_epsilon = 0; y_for_epsilon<dim; y_for_epsilon++) {
-            if(fabs(curr_cord_centroid->value-curr_cord_last_centroid->value)>EPS) {
+            if(fabs(curr_cord_centroid->value-curr_cord_last_centroid->value)>=EPS) {
                 flag = 0;
                 break;
             }
+            curr_cord_centroid = curr_cord_centroid->next;
+            curr_cord_last_centroid = curr_cord_last_centroid->next;
             
         }
+
         if(!flag) {
             break;
         }
     }
 
     if(flag) {
+        free_vector_list(last_centroids);
         break;
     }
     
     curr_vector_X = head_vec;
-    sum_vectors = initialize_sum_vectors(K,dim);
+    reset_vectors_to_zero(sum_vectors);
+    free_vector_list(last_centroids);
 
 
     }
     
-
-    
-    
     print_the_result(centorids, K, dim);
 
+    free(count_in_cluster);
+    free_vector_list(centorids);
+    free_vector_list(head_vec);
+    free_vector_list(sum_vectors);
+ 
     return 0;
+}
+
+void free_vector_list(struct vector *head_vec) {
+    struct vector *curr_vec = head_vec;
+    struct vector *next_vec;
+    struct cord *curr_cord, *next_cord;
+
+    while (curr_vec != NULL) {
+        curr_cord = curr_vec->cords;
+        while (curr_cord != NULL) {
+            next_cord = curr_cord->next;
+            free(curr_cord);
+            curr_cord = next_cord;
+        }
+        next_vec = curr_vec->next;
+        free(curr_vec);
+        curr_vec = next_vec;
+    }
 }
 
 
@@ -249,6 +320,21 @@ void print_the_result(struct vector *centroids_for_print, int K, int dim ) {
         }
         
         printf("\n");
+        curr_vec = curr_vec->next;
+    }
+}
+
+
+void reset_vectors_to_zero(struct vector *head_vec) {
+    struct vector *curr_vec = head_vec;
+    struct cord *curr_cord;
+
+    while (curr_vec != NULL) {
+        curr_cord = curr_vec->cords;
+        while (curr_cord != NULL) {
+            curr_cord->value = 0.0;
+            curr_cord = curr_cord->next;
+        }
         curr_vec = curr_vec->next;
     }
 }
@@ -368,7 +454,7 @@ struct vector *initialize_centroids(const struct vector *head_vec, int K, int di
 }
 
 
-double compute_distance(struct vector *v1, struct vector *v2, int dim) {
+double compute_distance(const struct vector *v1, const struct vector *v2, int dim) {
 
     /*
     Calculates the Euclidean distance between two vectors (points). It iterates through the 
@@ -440,5 +526,20 @@ int isInteger(char *str) {
 
 
 int find_closest_centroid(const struct vector *centroids, const struct vector *vectorX, int K, int dim) {
-    
+    int min_index = 0;
+    int i;
+    const struct vector *curr_centorid = centroids;
+    double distance, min_distance;
+    min_distance = compute_distance(curr_centorid, vectorX, dim);
+    curr_centorid = curr_centorid->next;
+    for(i = 1; i<K; i++) {
+        distance = compute_distance(curr_centorid, vectorX, dim);
+        if(distance<min_distance) {
+            min_distance = distance;
+            min_index = i;
+        }
+        curr_centorid = curr_centorid->next;
+    }
+    return min_index;
 }
+
