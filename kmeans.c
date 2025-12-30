@@ -9,10 +9,11 @@
 #define MAX_ITER_DEFAULT 400  /* Default maximum iterations */ 
 #define EPS 0.001
 
+/*declaration of structs*/
 struct vector;
 struct cord;
 
-
+/*declaration of functions*/
 int isInteger(char *str);
 double compute_distance(const struct vector *v1, const struct vector *v2, int dim); 
 int find_dim(const struct vector *vec);
@@ -25,18 +26,16 @@ void divide_vector_by_scalar(struct vector *v, int scalar);
 void free_vector_list(struct vector *head_vec); 
 void zero_out_vector(struct vector *v);
 
-
-
-
+/*implementations of structs*/
 struct cord
 {
     double value;
-    struct cord *next;
+    struct cord *next; /* Points to the next dimension/coordinate in the vector */
 };
 struct vector
 {
-    struct vector *next;
-    struct cord *cords;
+    struct vector *next; /* Points to the next data point (vector) in the list */
+    struct cord *cords; /* Points to the head of the coordinates list for this vector */
 };
 
 
@@ -124,6 +123,7 @@ int main(int argc, char **argv)
     curr_cord->next = NULL;
     curr_vec->cords = head_cord;
 
+    /*reading the input*/
     while (scanf("%lf%c", &n, &c) == 2)
     {
         curr_cord->value = n;
@@ -144,7 +144,7 @@ int main(int argc, char **argv)
             
             /* CRITICAL: Initialize cords to NULL immediately. 
                If the next malloc fails, free_vector_list needs this to be NULL 
-               to avoid accessing uninitialized memory (segfault). */
+               to avoid accessing uninitialized memory. */
             curr_vec->cords = NULL; 
 
             /* Allocate the first coordinate for the new vector */
@@ -229,10 +229,10 @@ int main(int argc, char **argv)
 
     for(iter = 0; iter<max_iter; iter++) {
 
-        /*initialize the counter with 0's*/
+        /* Clear previous iteration data (sums and counts) */
         for(j=0; j<K; j++) count_in_cluster[j] = 0;
 
-        /*initialize the sum vector with 0's*/
+        /* Assignment Step - Assign each vector to the closest centroid */
         curr_sum = sum_vectors;
         while(curr_sum != NULL) {
             zero_out_vector(curr_sum);
@@ -272,6 +272,7 @@ int main(int argc, char **argv)
         curr_next_cent = next_centroids;
         curr_sum = sum_vectors;
 
+        /* Update Step - Calculate new centroids by averaging cluster members */
         for(j=0; j<K; j++) {
             if(count_in_cluster[j] != 0) {
                 divide_vector_by_scalar(curr_next_cent, count_in_cluster[j]);
@@ -326,7 +327,7 @@ int main(int argc, char **argv)
 }
 
 
-
+/* Frees all memory allocated for the vectors and their internal coordinate lists */
 void free_vector_list(struct vector *head_vec) {
     struct vector *curr_vec = head_vec;
     struct vector *next_vec;
@@ -345,7 +346,7 @@ void free_vector_list(struct vector *head_vec) {
     }
 }
 
-
+/*Prints the results, the coordiantes of K centroids*/
 void print_the_result(struct vector *centroids_for_print, int K, int dim ) {
     const struct vector *curr_vec = centroids_for_print;
     const struct cord *curr_cord;
@@ -372,6 +373,7 @@ void print_the_result(struct vector *centroids_for_print, int K, int dim ) {
 }
 
 
+/* Resets all coordinates of a given vector to 0.0*/
 void zero_out_vector(struct vector *v) {
     struct cord *c = v->cords;
 
@@ -382,6 +384,10 @@ void zero_out_vector(struct vector *v) {
 }
 
 
+/*
+ * Adds the coordinate values of vector v2 to vector v1.
+ * v1 is modified in place (accumulating the sum), while v2 remains unchanged.
+ */
 struct vector *add_coordinates_from_other_vector(struct vector *v1, struct vector *v2, int dim) {
     struct cord *curr_cord1 = v1->cords;
     const struct cord *curr_cord2 = v2->cords;
@@ -399,6 +405,10 @@ struct vector *add_coordinates_from_other_vector(struct vector *v1, struct vecto
     return v1; /* Return the modified vector (useful for chaining) */
 }
 
+/*
+ * Divides every coordinate in vector v by a scalar integer.
+ * This is used in the Update Step to calculate the average (mean) of a cluster.
+ */
 void divide_vector_by_scalar(struct vector *v, int scalar) {
     struct cord *c = v->cords;
     while(c != NULL) {
@@ -408,6 +418,11 @@ void divide_vector_by_scalar(struct vector *v, int scalar) {
 }
 
 
+/*
+ * Allocates memory for K vectors, initialized to zero.
+ * These vectors serve as accumulators for calculating new centroids during iterations.
+ * Returns a pointer to the head of the list, or NULL if allocation fails.
+ */
 struct vector *initialize_sum_vectors(int K, int dim) {
     struct vector *head_v=NULL, *curr_v=NULL, *new_v;
     struct cord *head_c, *curr_c;
@@ -468,7 +483,10 @@ struct vector *initialize_sum_vectors(int K, int dim) {
 }
 
 
-
+/*
+ * Creates a deep copy of the first K vectors from the input list to serve as initial centroids.
+ * Returns the head of the new centroid list, or NULL on failure.
+ */
 struct vector *initialize_centroids(const struct vector *head_vec, int K, int dim) {
     struct vector *head_centroid=NULL, *curr_centroid=NULL, *new_centroid;
     const struct vector *source_v = head_vec;
@@ -534,14 +552,12 @@ struct vector *initialize_centroids(const struct vector *head_vec, int K, int di
 
 
 
-
+/*
+ * Calculates the Euclidean distance between two vectors (points). 
+ * It iterates through the coordinates, sums the squared differences, 
+ * and returns the square root of that sum.
+ */
 double compute_distance(const struct vector *v1, const struct vector *v2, int dim) {
-
-    /*
-    Calculates the Euclidean distance between two vectors (points). It iterates through the 
-    coordinates of both points, sums up the squared differences, and returns the square root 
-    of that sum.
-    */
     double diff;
     double cord_val1, cord_val2;
     double distance;
@@ -569,7 +585,10 @@ double compute_distance(const struct vector *v1, const struct vector *v2, int di
 }
 
 
-
+/*
+ * Determines the dimensionality (number of coordinates) of a vector 
+ * by counting the length of its coordinate linked list.
+ */
 int find_dim(const struct vector *vec)
 {
     int dim = 0;
@@ -588,7 +607,10 @@ int find_dim(const struct vector *vec)
     return dim;
 }
 
-
+/*
+ * Validates if a string represents a positive integer.
+ * Returns 1 if valid, 0 otherwise.
+ */
 int isInteger(char *str) {
 
     if (str == NULL || *str == '\0') {
@@ -604,7 +626,10 @@ int isInteger(char *str) {
     return 1; 
 }
 
-
+/*
+ * Iterates through all centroids to find the one closest to vectorX.
+ * Returns the index (0 to K-1) of the closest centroid.
+ */
 int find_closest_centroid(const struct vector *centroids, const struct vector *vectorX, int K, int dim) {
     int min_index = 0;
     int i;
