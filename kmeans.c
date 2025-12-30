@@ -185,8 +185,12 @@ int main(int argc, char **argv)
         prev->next = NULL;
         free_vector_list(temp);
     }
-    if(N == 0) {
-        printf("%s\n", ERROR_OCCURED); 
+
+    dim = find_dim(head_vec);
+
+    /* After reading input data */
+    if (N == 0 || dim <= 0) {
+        printf("%s\n", ERROR_OCCURED);
         free_vector_list(head_vec);
         return 1;
     }
@@ -197,7 +201,6 @@ int main(int argc, char **argv)
        return 1;
     }
 
-    dim = find_dim(head_vec);
 
     /*initialization*/
     centroids = initialize_centroids(head_vec, K, dim);
