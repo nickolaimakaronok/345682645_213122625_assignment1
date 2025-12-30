@@ -130,27 +130,41 @@ int main(int argc, char **argv)
         if (c == '\n')
         {
             N++;
+            /* Allocate memory for the next vector in the linked list */
             curr_vec->next = malloc(sizeof(struct vector));
-            if(curr_vec->next==NULL) {
+            if(curr_vec->next == NULL) {
                 printf("%s\n", ERROR_OCCURED);
+                free_vector_list(head_vec); /* Free all memory allocated so far */
                 return 1;
             }
+            
             curr_vec = curr_vec->next;
             curr_vec->next = NULL;
+            
+            /* CRITICAL: Initialize cords to NULL immediately. 
+               If the next malloc fails, free_vector_list needs this to be NULL 
+               to avoid accessing uninitialized memory (segfault). */
+            curr_vec->cords = NULL; 
+
+            /* Allocate the first coordinate for the new vector */
             head_cord = malloc(sizeof(struct cord));
-            if(head_cord==NULL) {
+            if(head_cord == NULL) {
                 printf("%s\n", ERROR_OCCURED);
+                free_vector_list(head_vec); /* Safe to call because cords is NULL */
                 return 1;
             }
+            
             curr_cord = head_cord;
             curr_cord->next = NULL;
-            curr_vec->cords = head_cord;
+            curr_vec->cords = head_cord; /* Link the coordinates to the vector */
             continue;
         }
 
+        /* Allocate memory for the next coordinate in the current vector */
         curr_cord->next = malloc(sizeof(struct cord));
         if(curr_cord->next == NULL) {
             printf("%s\n", ERROR_OCCURED);
+            free_vector_list(head_vec); /* Free everything on failure */
             return 1;
         }
         curr_cord = curr_cord->next;
@@ -169,6 +183,11 @@ int main(int argc, char **argv)
     if(prev != NULL) {
         prev->next = NULL;
         free_vector_list(temp);
+    }
+    if(N == 0) {
+        printf("%s\n", ERROR_OCCURED); 
+        free_vector_list(head_vec);
+        return 1;
     }
 
     if(K >= N) {

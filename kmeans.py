@@ -66,6 +66,11 @@ def main():
     data_points = []
     data_points = read_input()
 
+    # check if document is empty
+    if len(data_points) == 0:
+        print(ERROR_OCCURED)
+        sys.exit(1)
+
     #Final Validation for K
     N = len(data_points)
     if not (1 < k < N):
