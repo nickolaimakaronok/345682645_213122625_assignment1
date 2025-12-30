@@ -116,6 +116,7 @@ int main(int argc, char **argv)
     head_cord = malloc(sizeof(struct cord));
     if (!head_cord) {
         printf("%s\n", ERROR_OCCURED); 
+        free(head_vec);
         return 1; 
     }
 
@@ -217,8 +218,11 @@ int main(int argc, char **argv)
          return 1;
     }
     count_in_cluster = calloc(K, sizeof(int));
-    if(!count_in_cluster || !sum_vectors || !centroids) {
+    if(!count_in_cluster) {
         printf("%s\n", ERROR_OCCURED);
+        free_vector_list(head_vec);
+        free_vector_list(centroids);
+        free_vector_list(sum_vectors);
         return 1;
     }
 
